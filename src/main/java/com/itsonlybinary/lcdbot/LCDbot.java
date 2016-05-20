@@ -59,6 +59,7 @@ public class LCDbot {
 
     private final DecimalFormat decimalFormat;
     private final DisplayController displayController;
+    private final TemperatureController temperatureController;
 
     LCDbot() throws InterruptedException {
         System.out.println("LCDbot Starting");
@@ -76,6 +77,9 @@ public class LCDbot {
 //        GpioInterrupt.enablePinStateChangeCallback(PIN_BUTTON);
         // Turn Backlight on
         Gpio.digitalWrite(PIN_LED, true);
+
+        temperatureController = new TemperatureController();
+        new Thread(temperatureController).start();
 
         displayController = new DisplayController(this);
         new Thread(displayController).start();
@@ -96,19 +100,7 @@ public class LCDbot {
     }
 
     double getTemp() {
-        double temp = 0;
-        try {
-            List<String> lines = Files.readAllLines(FileSystems.getDefault().getPath(W1_DEVICES_PATH + DEVICE_NAME + W1_SLAVE), Charset.defaultCharset());
-            for (String line : lines) {
-                if (line.contains("t=")) {
-                    temp = Double.parseDouble(line.substring(line.indexOf("t=") + 2, line.length())) / 1000;
-                }
-            }
-
-        } catch (IOException ex) {
-            Logger.getLogger(LCDbot.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return temp;
+        return temperatureController.getTemperature();
     }
 
     @Handler
@@ -119,7 +111,7 @@ public class LCDbot {
         }
         if (botChannel.equalsIgnoreCase(channel.getName())) {
             if (event.getMessage().equalsIgnoreCase("!temp")) {
-                channel.sendMessage("Temperature is " + decimalFormat.format(getTemp()) + " deg C / " + decimalFormat.format((getTemp() * 1.8) + 32) + " deg F");
+                channel.sendMessage("Temperature is " + decimalFormat.format(getTemp()) + " Celsius | " + decimalFormat.format((getTemp() * 1.8) + 32) + " Fahrenheit | " + decimalFormat.format(getTemp() + 273.15) + " Kelvin.");
             } else {
                 displayController.add(new DisplayData(1, 0, event.getActor().getNick() + ": " + event.getMessage(), true));
             }
