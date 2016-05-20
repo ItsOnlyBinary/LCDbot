@@ -23,13 +23,24 @@ public class DisplayData {
         this.col = col;
         this.scroll = scroll;
         if (scroll) {
-            this.text = "                " + text + "                ";
+            this.text = "                " + cleanText(text) + "                ";
         } else {
-            this.text = text;
+            this.text = cleanText(text);
         }
         while (col + this.text.length() < 16) {
             this.text += " ";
         }
+    }
+
+    private String cleanText(String text) {
+        StringBuilder sb = new StringBuilder(text);
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c < 0x20 || c > 0x7d || c == 0x5c) {
+                sb.setCharAt(i, (char) 0x7e);
+            }
+        }
+        return sb.toString();
     }
 
     public int getRow() {
