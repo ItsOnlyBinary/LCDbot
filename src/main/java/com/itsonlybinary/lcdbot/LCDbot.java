@@ -5,15 +5,18 @@
  */
 package com.itsonlybinary.lcdbot;
 
+import com.pi4j.io.gpio.GpioController;
+import com.pi4j.io.gpio.GpioFactory;
+import com.pi4j.io.gpio.GpioPinDigitalInput;
+import com.pi4j.io.gpio.Pin;
+import com.pi4j.io.gpio.PinPullResistance;
+import com.pi4j.io.gpio.PinState;
+import com.pi4j.io.gpio.RaspiPin;
+import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
+import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pi4j.wiringpi.Gpio;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.text.DecimalFormat;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.kitteh.irc.client.library.Client;
 import org.kitteh.irc.client.library.element.Channel;
 import org.kitteh.irc.client.library.event.channel.ChannelMessageEvent;
@@ -42,27 +45,40 @@ public class LCDbot {
     public final static int PIN_DATA4 = 3;
 
     public final static int PIN_LED = 4;
-    public final static int PIN_BUTTON = 6;
+    public final static Pin PIN_BUTTON = RaspiPin.GPIO_06;
     public final static String W1_DEVICES_PATH = "/sys/bus/w1/devices/";
     public final static String W1_SLAVE = "/w1_slave";
     public final static String DEVICE_NAME = "28-031581dd3aff";
 
     public static void main(String args[]) throws InterruptedException {
-        if (Gpio.wiringPiSetup() == -1) {
-            System.out.println(" ==>> GPIO SETUP FAILED");
-            return;
-        }
         LCDbot lcdBot = new LCDbot();
     }
-
+    
     private Client client;
-
+    private final GpioController gpio;
     private final DecimalFormat decimalFormat;
     private final DisplayController displayController;
     private final TemperatureController temperatureController;
+    private final GpioPinDigitalInput button;
+    private String slapee = "";
 
     LCDbot() throws InterruptedException {
         System.out.println("LCDbot Starting");
+
+        gpio = GpioFactory.getInstance();
+
+        button = gpio.provisionDigitalInputPin(PIN_BUTTON, PinPullResistance.PULL_UP);
+        button.addListener(new GpioPinListenerDigital() {
+            @Override
+            public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
+                // display pin state on console
+                if (event.getState() == PinState.LOW && slapee.equals("") == false) {
+                    String message = "slaps " + slapee + " around with a large trout";
+                    client.sendCTCPMessage(botChannel, "ACTION " + message);
+                }
+            }
+
+        });
 
         decimalFormat = new DecimalFormat("#.#");
 
@@ -109,9 +125,13 @@ public class LCDbot {
         if ("Hello LCDbot".equalsIgnoreCase(event.getMessage())) {
             channel.sendMessage("Hi " + event.getActor().getNick() + "!");
         }
+
         if (botChannel.equalsIgnoreCase(channel.getName())) {
             if (event.getMessage().equalsIgnoreCase("!temp")) {
                 channel.sendMessage("Temperature is " + decimalFormat.format(getTemp()) + " Celsius | " + decimalFormat.format((getTemp() * 1.8) + 32) + " Fahrenheit | " + decimalFormat.format(getTemp() + 273.15) + " Kelvin.");
+            } else if (event.getMessage().startsWith("!setslapee ")) {
+                slapee = event.getMessage().split(" ")[1];
+                channel.sendMessage("Slapee set to: " + slapee);
             } else {
                 displayController.add(new DisplayData(1, 0, event.getActor().getNick() + ": " + event.getMessage(), true));
             }

@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  */
 public class TemperatureController implements Runnable {
 
-    private double temperature = 0;
+    private volatile double temperature = 0;
 
     @Override
     public void run() {
@@ -41,11 +41,11 @@ public class TemperatureController implements Runnable {
         }
     }
 
-    synchronized double getTemperature() {
+    double getTemperature() {
         return temperature;
     }
 
-    synchronized void setTemperature(Double temperature) {
+    void setTemperature(Double temperature) {
         this.temperature = temperature;
     }
 }
