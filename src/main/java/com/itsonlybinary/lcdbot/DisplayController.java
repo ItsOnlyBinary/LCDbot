@@ -145,47 +145,55 @@ public class DisplayController implements Runnable {
                     Lcd.lcdPosition(lcdHandle, 9, 0);
                     Lcd.lcdPutchar(lcdHandle, (lcdBot.isConnected()) ? (byte) 0b0 : (byte) 0b1);
                     delayTime = delayTimeDefault;
+                } else {
+                    delayTime--;
                 }
                 if (delayTemp == 0) {
                     if (temperatureController.isReady()) {
                         Lcd.lcdPosition(lcdHandle, 11, 0);
                         double tempDouble = temperatureController.getTemperature(0);
-                        DecimalFormat decimalFormat = new DecimalFormat((tempDouble > 99.9) ? "#" : "#.#");
+                        DecimalFormat decimalFormat = new DecimalFormat((tempDouble > 99.9) ? "#" : "#.0");
                         String tempString = decimalFormat.format(tempDouble) + "C";
 
                         while (11 + tempString.length() < 16) {
                             tempString = " " + tempString;
                         }
                         Lcd.lcdPuts(lcdHandle, tempString);
+                        delayTemp = delayTempDefault;
                     }
-                    delayTemp = delayTempDefault;
+                } else {
+                    delayTemp--;
                 }
+
                 if (job == null) {
                     job = displayQueue.poll();
                     delayText = 0;
                 }
-                if (job != null && delayText == 0) {
-                    Lcd.lcdPosition(lcdHandle, job.getCol(), job.getRow());
-                    Lcd.lcdPuts(lcdHandle, job.getText());
+                if (job != null) {
+                    if (delayText == 0) {
+                        Lcd.lcdPosition(lcdHandle, job.getCol(), job.getRow());
+                        Lcd.lcdPuts(lcdHandle, job.getText());
 
-                    if (job.isDone()) {
-                        job = null;
+                        if (job.isDone()) {
+                            job = null;
+                        }
+                        delayText = delayTextDefault;
+                    } else {
+                        delayText--;
                     }
-                    delayText = delayTextDefault;
                 }
-                delayTemp--;
-                delayTime--;
-                delayText--;
-                Thread.sleep(100);
 
+                Thread.sleep(100);
             }
+
+            // DisplayController has finished
             Lcd.lcdClear(lcdHandle);
             lcdHandle = -1;
 
-            //power off backlight
+            // power off backlight
             backlightDisable();
 
-            //power off lcd
+            // power off lcd
             Gpio.digitalWrite(LCDbot.PIN_LCD, false);
 
         } catch (InterruptedException ex) {
