@@ -1,12 +1,6 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.itsonlybinary.lcdbot;
 
 /**
- *
  * @author ItsOnlyBinary
  */
 public class DisplayData {
@@ -18,7 +12,7 @@ public class DisplayData {
     private int stage = 0;
     private boolean done = false;
 
-    DisplayData(int row, int col, String text, boolean scroll) {
+    public DisplayData(int row, int col, String text, boolean scroll) {
         this.row = row;
         this.col = col;
         this.scroll = scroll;
@@ -60,18 +54,6 @@ public class DisplayData {
             stage++;
         }
         return outText;
-    }
-
-    public int getStage() {
-        return stage;
-    }
-
-    public void incStage() {
-        stage++;
-    }
-
-    boolean isScroll() {
-        return scroll;
     }
 
     boolean isDone() {
